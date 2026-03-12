@@ -1,59 +1,27 @@
-# Roadmap
+# Roadmap (Post-M4)
 
-This roadmap converts the former “v1 list” intent into phased, shippable milestones.
+The original M0-M4 plan is complete in this branch. Next phase focuses on scale and operator UX.
 
-## Principles
+## N1 — Execution adapters & policy enforcement
+- queue adapter plugin loading (local/file/redis)
+- optional policy hooks before `done` transitions
+- provenance lint checks in CI
 
-- Ship thin vertical slices.
-- Keep file-first compatibility as a non-negotiable.
-- Avoid hidden state and irreversible automation.
+## N2 — Multi-project scheduling intelligence
+- weighted fair scheduling across priorities
+- blocked-age escalation and SLA alerts
+- scheduling simulation test corpus
 
-## Milestones
+## N3 — Collaboration and review workflows
+- project-level ownership metadata
+- review-required decision gates
+- signed decision/provenance snapshots
 
-## M0 — Baseline mainline (`v0.1.0`) ✅
+## N4 — Distribution hardening (`v1.0.0` target)
+- packaged CLI entrypoint (`pipx install`)
+- reproducible release artifacts + checksums
+- formal threat model review and security test suite
 
-- [x] Canonical artifact contract (`NEXT/RISKS/DECISIONS/PROVENANCE`)
-- [x] Core parser + next-item selection (`src/orch.py`)
-- [x] Bootstrap + enqueue + checklist progression scripts
-- [x] Public-facing docs cleanup (README, CONTRIBUTING, changelog)
-- [x] Mainline plan + release/tag instructions
-
-## M1 — Reliability hardening (`v0.2.x`)
-
-- [ ] Unit tests for parser edge-cases (`[ ] [~] [x] [!]`, malformed lines, nested lists)
-- [ ] Smoke test script for scripts + Python helpers
-- [ ] CI workflow (lint + tests + shellcheck)
-- [ ] Clear error taxonomy in CLI/script outputs
-
-## M2 — Default orchestration path (`v0.3.x`)
-
-- [ ] Add a single entrypoint command (`orch next`, `orch done`, `orch log`)
-- [ ] Optional local loop runner with explicit stop conditions
-- [ ] Queue adapter interface docs + reference implementation
-- [ ] Migration guide from ad-hoc project notes to canonical artifacts
-
-## M3 — Multi-project operations (`v0.4.x`)
-
-- [ ] Priority policy for global selection (mtime + explicit priority)
-- [ ] Blocked-state triage views
-- [ ] Decision/provenance report generation helpers
-
-## M4 — v1 readiness (`v1.0.0`)
-
-- [ ] Backward-compatibility policy documented
-- [ ] Stable CLI surface with semantic versioning guarantees
-- [ ] End-to-end examples validated in clean environment
-- [ ] Security model documented (secrets, permissions, trust boundaries)
-
-## Deferred / Nice-to-have
-
-- Persona package registry + validation schema
-- Web UI for artifact browsing
-- Optional hosted queue backends
-
-## Exit criteria for “mainline default”
-
-The project can be treated as the default orchestration path when:
-1. M1 is complete (tests + CI reliability), and
-2. M2 entrypoint flow is available/documented, and
-3. migration guidance is proven on at least two real projects.
+## Research anchors used
+- Existing local references: `docs/system-design-fundamentals-reference.md`, `docs/agency-agents-reference.md`
+- Engineering practice references: pytest docs, GitHub Actions workflow docs, shellcheck best practices

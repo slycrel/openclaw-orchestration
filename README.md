@@ -1,217 +1,43 @@
 # openclaw-orchestration
 
-[![Release](https://img.shields.io/github/v/release/slycrel/openclaw-orchestration)](https://github.com/slycrel/openclaw-orchestration/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+File-first orchestration with a stable CLI and auditable Markdown artifacts.
 
-> If you want your AI task loop to be **reliable, inspectable, and git-friendly** instead of trapped in chat scrollback, this is for you.
+## What shipped overnight
 
-File-first orchestration for turning a mission into shippable work with durable artifacts:
-
-**mission → plan → execute → checkpoint**
-
-This repo is intentionally simple: Markdown is the source of truth, scripts are thin helpers, and state stays inspectable.
-
-## Why this exists
-
-Most orchestration prototypes die in chat history. This one keeps the loop on disk so work survives model/runtime changes.
-
-### Who this is for
-
-- builders running long-lived AI projects that must survive restarts and model swaps
-- teams who want reviewable markdown artifacts instead of opaque agent memory
-- anyone who prefers deterministic, auditable progression over "trust me" autonomy
-
-You get:
-- predictable project structure (`NEXT`, `RISKS`, `DECISIONS`, `PROVENANCE`)
-- deterministic task selection (`src/orch.py`)
-- lightweight shell tooling for bootstrapping and progression
-- portable docs/personas that do not depend on private infrastructure
-
-## Status
-
-- **Maturity:** pre-1.0, stable baseline candidate
-- **Recommended baseline tag:** `v0.1.0`
-- **Current scope:** single-user, local artifact-driven orchestration
-
-See [`MAINLINE_PLAN.md`](MAINLINE_PLAN.md) for the path to default/mainline usage.
-
-## Repository layout
-
-```text
-openclaw-orchestration/
-├── docs/
-├── personas/
-├── projects/
-├── scripts/
-│   ├── new_project.sh
-│   ├── enqueue.sh
-│   └── mark_next_done.sh
-└── src/
-    └── orch.py
-```
-
-## Prerequisites
-
-- Linux or macOS
-- Bash 4+
-- Python 3.10+
-- Git
-- Optional: queue runner compatible with `scripts/task-queue.sh` (for `enqueue.sh`)
-
-## 30-second mental model
-
-1. Create a project with a mission.
-2. Work advances from `NEXT.md` checklist state.
-3. Every meaningful change gets logged in `DECISIONS.md`.
-4. You always know what happened and what to do next.
-
-## Architecture at a glance
-
-```text
-Mission
-  │
-  ▼
-new_project.sh ──► projects/<slug>/NEXT.md  (source of actionable tasks)
-  │                           │
-  │                           ├──► mark_next_done.sh (progress state)
-  │                           └──► orch.py (deterministic next-item selection)
-  │
-  └──► DECISIONS.md (append-only execution history)
-              │
-              └──► optional enqueue.sh → external queue runner
-```
+- `orch` CLI (`init`, `next`, `done`, `log`, `blocked`, `report`)
+- priority-aware global selection (`projects/<slug>/PRIORITY`)
+- blocked-project triage view + report generation (Markdown/JSON)
+- parser hardening + unit tests for edge states/malformed lines/nested checklists
+- smoke harness (`scripts/smoke.sh`)
+- CI workflow (shellcheck + pytest + smoke)
+- migration/compat/security docs
 
 ## Quickstart
 
 ```bash
-# from this repo root
-chmod +x scripts/*.sh
-
-# 1) create a project
-scripts/new_project.sh demo "Define and ship a demo orchestration flow"
-
-# 2) inspect next task (python helper)
-python3 - <<'PY'
-from src.orch import select_next_item
-print(select_next_item("demo"))
-PY
-
-# 3) mark first numbered task as done
-scripts/mark_next_done.sh demo
+cd prototypes/poe-orchestration
+python3 src/cli.py init demo "Ship demo flow" --priority 3
+python3 src/cli.py next
+python3 src/cli.py done demo
+python3 src/cli.py report --project demo
 ```
 
-Optional queue submission:
+## Verify
 
 ```bash
-scripts/enqueue.sh demo "Draft implementation plan"
+cd prototypes/poe-orchestration
+pytest
+bash scripts/smoke.sh
 ```
 
-> `enqueue.sh` expects a workspace-level `scripts/task-queue.sh`. If unavailable, you can still run fully file-first without queueing.
+## Docs
 
-### Expected output (example)
+- `docs/MIGRATION_GUIDE.md`
+- `docs/QUEUE_ADAPTER.md`
+- `docs/BACKWARD_COMPATIBILITY.md`
+- `docs/SECURITY_MODEL.md`
+- `docs/END_TO_END.md`
 
-```text
-$ scripts/new_project.sh demo "Define and ship a demo orchestration flow"
-created=projects/demo
-next=projects/demo/NEXT.md
+## Versioning
 
-$ scripts/mark_next_done.sh demo
-marked_done=1
-next_item="Create first-pass plan"
-
-$ python3 - <<'PY'
-from src.orch import select_global_next
-print(select_global_next())
-PY
-('demo', NextItem(index=9, state=' ', text='Create first-pass plan', ...))
-```
-
-## Architecture (current)
-
-### Data model
-
-Each project lives in `projects/<slug>/`:
-- `NEXT.md` — active checklist (supports `- [ ]`, `- [~]`, `- [x]`, `- [!]`)
-- `RISKS.md` — known unknowns and watch items
-- `DECISIONS.md` — append-only decision log
-- `PROVENANCE.md` — source links/evidence pointers
-
-### Runtime helpers
-
-`src/orch.py` provides:
-- parsing of checklist state with strict patterns
-- selection of next actionable item per project or globally
-- decision appends with UTC timestamps
-- project bootstrapping fallback (`ensure_project`)
-
-### Design constraints
-
-- human-readable artifacts over hidden state
-- deterministic behavior over opaque autonomy
-- safe defaults over magical automation
-
-## Usage examples
-
-### Pick next work item across all projects
-
-```bash
-python3 - <<'PY'
-from src.orch import select_global_next
-print(select_global_next())
-PY
-```
-
-### Log a decision
-
-```bash
-python3 - <<'PY'
-from src.orch import append_decision
-append_decision("demo", ["Completed bootstrap.", "Next: add parser tests."])
-PY
-```
-
-## Limitations
-
-- no scheduler/daemon included yet
-- no multi-user permissions model
-- queue integration is adapter-based, not bundled
-- interface may evolve before `v1.0.0`
-
-## Documentation index
-
-- Conventions: [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)
-- Publish gate: [`docs/PUBLISH_CHECKLIST.md`](docs/PUBLISH_CHECKLIST.md)
-- Research brief template: [`docs/research-brief-template.md`](docs/research-brief-template.md)
-- Persona catalog: [`personas/README.md`](personas/README.md)
-- Roadmap: [`ROADMAP.md`](ROADMAP.md)
-- Contribution guide: [`CONTRIBUTING.md`](CONTRIBUTING.md)
-- Changelog: [`CHANGELOG.md`](CHANGELOG.md)
-
-## Related research references
-
-Context docs included in this repo:
-- [`docs/agency-agents-reference.md`](docs/agency-agents-reference.md)
-- [`docs/system-design-fundamentals-reference.md`](docs/system-design-fundamentals-reference.md)
-
-These are references, not runtime dependencies.
-
-## Security and privacy
-
-- never commit `.env`, secrets, tokens, or private exports
-- keep examples generic and portable
-- treat project artifacts as sensitive until reviewed for publication
-
-## Release notes (baseline)
-
-### Candidate: `v0.1.0`
-
-- establishes canonical project artifact contract
-- ships minimal orchestration core (`src/orch.py`)
-- includes helper scripts for project lifecycle
-- adds roadmap + mainline migration docs + community templates
-
-Tagging instructions live in [`MAINLINE_PLAN.md`](MAINLINE_PLAN.md).
-
-## License
-
-MIT (add `LICENSE` if missing in your target repo root).
+CLI and artifact contract now follow semantic versioning policy in `docs/BACKWARD_COMPATIBILITY.md`.

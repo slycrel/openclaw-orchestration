@@ -1,18 +1,19 @@
 # Changelog
 
-All notable changes to this project are documented in this file.
-
-## [0.1.0] - 2026-03-11
+## [0.4.0] - 2026-03-11
 
 ### Added
-- Roadmap with milestone-based plan (`ROADMAP.md`)
-- Mainline definition and release instructions (`MAINLINE_PLAN.md`)
-- Contribution guide (`CONTRIBUTING.md`)
-- Community hygiene templates (`.github/` issue + PR templates, CODEOWNERS)
-- Public `.gitignore` and `.env.example`
+- `src/cli.py` with `init|next|done|log|blocked|report`
+- priority file support (`projects/<slug>/PRIORITY`) and priority-aware global scheduling
+- blocked-project triage and report generation helpers
+- parser/unit tests and CLI integration tests (`tests/`)
+- smoke harness (`scripts/smoke.sh`)
+- CI workflow (`.github/workflows/ci.yml`)
+- migration + queue adapter + compatibility + security + end-to-end docs
 
 ### Changed
-- README rewritten for clearer value proposition, quickstart, architecture, examples, limitations, and release guidance
+- `scripts/new_project.sh` and `scripts/mark_next_done.sh` now route through CLI
+- scripts and CLI now emit explicit error taxonomy codes for common failures
 
-### Notes
-- This is the first stable baseline candidate for mainline usage.
+### Fixed
+- roadmap M1-M4 items were converted from plan-only to executable implementation
