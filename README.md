@@ -1,5 +1,8 @@
 # openclaw-orchestration
 
+[![Release](https://img.shields.io/github/v/release/slycrel/openclaw-orchestration)](https://github.com/slycrel/openclaw-orchestration/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 > If you want your AI task loop to be **reliable, inspectable, and git-friendly** instead of trapped in chat scrollback, this is for you.
 
 File-first orchestration for turning a mission into shippable work with durable artifacts:
@@ -11,6 +14,12 @@ This repo is intentionally simple: Markdown is the source of truth, scripts are 
 ## Why this exists
 
 Most orchestration prototypes die in chat history. This one keeps the loop on disk so work survives model/runtime changes.
+
+### Who this is for
+
+- builders running long-lived AI projects that must survive restarts and model swaps
+- teams who want reviewable markdown artifacts instead of opaque agent memory
+- anyone who prefers deterministic, auditable progression over "trust me" autonomy
 
 You get:
 - predictable project structure (`NEXT`, `RISKS`, `DECISIONS`, `PROVENANCE`)
@@ -48,6 +57,13 @@ openclaw-orchestration/
 - Python 3.10+
 - Git
 - Optional: queue runner compatible with `scripts/task-queue.sh` (for `enqueue.sh`)
+
+## 30-second mental model
+
+1. Create a project with a mission.
+2. Work advances from `NEXT.md` checklist state.
+3. Every meaningful change gets logged in `DECISIONS.md`.
+4. You always know what happened and what to do next.
 
 ## Quickstart
 
