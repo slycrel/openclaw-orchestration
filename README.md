@@ -65,6 +65,22 @@ openclaw-orchestration/
 3. Every meaningful change gets logged in `DECISIONS.md`.
 4. You always know what happened and what to do next.
 
+## Architecture at a glance
+
+```text
+Mission
+  │
+  ▼
+new_project.sh ──► projects/<slug>/NEXT.md  (source of actionable tasks)
+  │                           │
+  │                           ├──► mark_next_done.sh (progress state)
+  │                           └──► orch.py (deterministic next-item selection)
+  │
+  └──► DECISIONS.md (append-only execution history)
+              │
+              └──► optional enqueue.sh → external queue runner
+```
+
 ## Quickstart
 
 ```bash
@@ -91,6 +107,24 @@ scripts/enqueue.sh demo "Draft implementation plan"
 ```
 
 > `enqueue.sh` expects a workspace-level `scripts/task-queue.sh`. If unavailable, you can still run fully file-first without queueing.
+
+### Expected output (example)
+
+```text
+$ scripts/new_project.sh demo "Define and ship a demo orchestration flow"
+created=projects/demo
+next=projects/demo/NEXT.md
+
+$ scripts/mark_next_done.sh demo
+marked_done=1
+next_item="Create first-pass plan"
+
+$ python3 - <<'PY'
+from src.orch import select_global_next
+print(select_global_next())
+PY
+('demo', NextItem(index=9, state=' ', text='Create first-pass plan', ...))
+```
 
 ## Architecture (current)
 
