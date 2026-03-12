@@ -41,7 +41,13 @@ class NextItem:
 
 
 def ws_root() -> Path:
-    return Path("/home/clawd/.openclaw/workspace")
+    # Prefer explicit workspace env when available.
+    env_root = os.environ.get("OPENCLAW_WORKSPACE") or os.environ.get("WORKSPACE_ROOT")
+    if env_root:
+        return Path(env_root).expanduser().resolve()
+
+    # Fallback: infer from this file location (…/prototypes/poe-orchestration/src/orch.py).
+    return Path(__file__).resolve().parents[3]
 
 
 def orch_root() -> Path:
