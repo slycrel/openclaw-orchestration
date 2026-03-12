@@ -1,5 +1,7 @@
 # openclaw-orchestration
 
+> If you want your AI task loop to be **reliable, inspectable, and git-friendly** instead of trapped in chat scrollback, this is for you.
+
 File-first orchestration for turning a mission into shippable work with durable artifacts:
 
 **mission → plan → execute → checkpoint**
