@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Environment
+.env
+.env.local
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+
+# Artifacts
+output/
+*.log
+
+# Temporary
+tmp/

@@ -1,31 +1,33 @@
-# Poe Orchestration (Prototype v0)
+# openclaw-orchestration
 
-Poe Orchestration is a file-first workflow for turning a mission into repeatable execution:
+File-first orchestration for turning a mission into shippable work with durable artifacts:
 
 **mission → plan → execute → checkpoint**
 
-It is designed for chat-driven operation with durable artifacts on disk, minimal interruption, and clear decision gates.
+This repo is intentionally simple: Markdown is the source of truth, scripts are thin helpers, and state stays inspectable.
 
-## Scope and status
+## Why this exists
 
-This repository is an early public prototype. It standardizes project structure and core helpers for task selection and checklist progression.
+Most orchestration prototypes die in chat history. This one keeps the loop on disk so work survives model/runtime changes.
 
-- **Current maturity:** v0 (prototype)
-- **Primary interface:** Markdown artifacts + helper scripts
-- **Not yet included:** full autonomous runner, production-grade scheduling, policy enforcement layer
+You get:
+- predictable project structure (`NEXT`, `RISKS`, `DECISIONS`, `PROVENANCE`)
+- deterministic task selection (`src/orch.py`)
+- lightweight shell tooling for bootstrapping and progression
+- portable docs/personas that do not depend on private infrastructure
 
-## Prerequisites
+## Status
 
-- Linux or macOS shell environment
-- Bash 4+
-- Python 3.10+
-- Git
-- Optional: a queue runner compatible with `scripts/task-queue.sh` in your workspace
+- **Maturity:** pre-1.0, stable baseline candidate
+- **Recommended baseline tag:** `v0.1.0`
+- **Current scope:** single-user, local artifact-driven orchestration
+
+See [`MAINLINE_PLAN.md`](MAINLINE_PLAN.md) for the path to default/mainline usage.
 
 ## Repository layout
 
 ```text
-poe-orchestration/
+openclaw-orchestration/
 ├── docs/
 ├── personas/
 ├── projects/
@@ -37,134 +39,127 @@ poe-orchestration/
     └── orch.py
 ```
 
-### Project artifact contract
+## Prerequisites
 
-Each project lives under `projects/<slug>/` and should contain:
-
-- `NEXT.md` — active checklist and near-term plan
-- `RISKS.md` — risks, assumptions, unknowns
-- `DECISIONS.md` — timestamped decision log
-- `PROVENANCE.md` — references to evidence/artifacts
-
-These files are the operational source of truth.
-
-## Setup
-
-From the repository root:
-
-```bash
-cd prototypes/poe-orchestration
-chmod +x scripts/*.sh
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-No external package installation is required for the current helper scripts.
+- Linux or macOS
+- Bash 4+
+- Python 3.10+
+- Git
+- Optional: queue runner compatible with `scripts/task-queue.sh` (for `enqueue.sh`)
 
 ## Quickstart
 
-1. **Create a project**
+```bash
+# from this repo root
+chmod +x scripts/*.sh
 
-   ```bash
-   scripts/new_project.sh "demo-project" "Define and ship a demo orchestration flow"
-   ```
+# 1) create a project
+scripts/new_project.sh demo "Define and ship a demo orchestration flow"
 
-2. **Add work to queue**
+# 2) inspect next task (python helper)
+python3 - <<'PY'
+from src.orch import select_next_item
+print(select_next_item("demo"))
+PY
 
-   ```bash
-   scripts/enqueue.sh "demo-project" "Draft implementation plan"
-   ```
+# 3) mark first numbered task as done
+scripts/mark_next_done.sh demo
+```
 
-3. **Mark first numbered NEXT item complete**
+Optional queue submission:
 
-   ```bash
-   scripts/mark_next_done.sh "demo-project"
-   ```
+```bash
+scripts/enqueue.sh demo "Draft implementation plan"
+```
 
-4. **Inspect/checkpoint artifacts**
+> `enqueue.sh` expects a workspace-level `scripts/task-queue.sh`. If unavailable, you can still run fully file-first without queueing.
 
-   - `projects/demo-project/NEXT.md`
-   - `projects/demo-project/DECISIONS.md`
+## Architecture (current)
 
-## Architecture overview
+### Data model
 
-Core behavior is implemented in `src/orch.py`:
+Each project lives in `projects/<slug>/`:
+- `NEXT.md` — active checklist (supports `- [ ]`, `- [~]`, `- [x]`, `- [!]`)
+- `RISKS.md` — known unknowns and watch items
+- `DECISIONS.md` — append-only decision log
+- `PROVENANCE.md` — source links/evidence pointers
 
-- Parses `NEXT.md` checklist entries with strict state markers (`[ ]`, `[~]`, `[x]`, `[!]`)
-- Selects next actionable item per project, or globally across projects
-- Appends timestamped decision entries to `DECISIONS.md`
-- Ensures project bootstrap files exist
+### Runtime helpers
 
-Design choices:
+`src/orch.py` provides:
+- parsing of checklist state with strict patterns
+- selection of next actionable item per project or globally
+- decision appends with UTC timestamps
+- project bootstrapping fallback (`ensure_project`)
 
-- **File-first state:** plain Markdown remains inspectable and editable
-- **Deterministic selection:** explicit parsing rules reduce ambiguity
-- **Checkpoint logging:** decisions are append-only and timestamped
+### Design constraints
 
-## Commands reference
+- human-readable artifacts over hidden state
+- deterministic behavior over opaque autonomy
+- safe defaults over magical automation
 
-- `scripts/new_project.sh <slug> <mission...>`
-  - Bootstraps project folder and canonical docs.
-- `scripts/enqueue.sh <slug> <task...>`
-  - Sends project-scoped task payload to shared task queue.
-- `scripts/mark_next_done.sh <slug>`
-  - Converts first numbered item in `NEXT.md` to `- [x] ...`.
+## Usage examples
 
-## Testing and validation
+### Pick next work item across all projects
 
-Current repo-level validation is lightweight:
+```bash
+python3 - <<'PY'
+from src.orch import select_global_next
+print(select_global_next())
+PY
+```
 
-- Shell scripts can be smoke-tested by running `--help`/usage paths and a demo project bootstrap.
-- Python behavior can be verified with a short REPL or script invoking `src/orch.py` functions.
-- Markdown quality should pass heading consistency, link validity, and basic lint checks.
+### Log a decision
 
-Suggested next step for contributors: add automated tests for parser edge cases in `src/orch.py`.
-
-## Operations and runbook links
-
-- Conventions: [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)
-- Research artifact template: [`docs/research-brief-template.md`](docs/research-brief-template.md)
-- Persona catalog: [`personas/README.md`](personas/README.md)
-
-For publish readiness, use: [`docs/PUBLISH_CHECKLIST.md`](docs/PUBLISH_CHECKLIST.md)
-
-## Security and privacy notes
-
-- Do not commit secrets, credentials, private tokens, or personal chat exports.
-- Keep environment-specific paths and hostnames out of public docs.
-- Treat project artifacts as potentially sensitive until reviewed.
-- If queue backends or external services are used, require least-privilege credentials.
+```bash
+python3 - <<'PY'
+from src.orch import append_decision
+append_decision("demo", ["Completed bootstrap.", "Next: add parser tests."])
+PY
+```
 
 ## Limitations
 
-- Prototype quality; interfaces may change without backward compatibility.
-- No built-in auth, ACLs, or tenancy boundaries.
-- Assumes disciplined artifact updates by operator/automation.
-- Queue integration depends on an external workspace script.
+- no scheduler/daemon included yet
+- no multi-user permissions model
+- queue integration is adapter-based, not bundled
+- interface may evolve before `v1.0.0`
 
-## Troubleshooting
+## Documentation index
 
-- **`task-queue.sh not found/executable`**
-  - Ensure your workspace provides an executable queue script, or adapt `scripts/enqueue.sh`.
-- **Project files missing**
-  - Re-run `scripts/new_project.sh` for the same slug; it creates missing canonical docs.
-- **Checklist item not detected**
-  - Use supported checklist syntax (`- [ ] task` or numbered list for `mark_next_done.sh`).
-- **Permission errors on scripts**
-  - Run `chmod +x scripts/*.sh`.
+- Conventions: [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)
+- Publish gate: [`docs/PUBLISH_CHECKLIST.md`](docs/PUBLISH_CHECKLIST.md)
+- Research brief template: [`docs/research-brief-template.md`](docs/research-brief-template.md)
+- Persona catalog: [`personas/README.md`](personas/README.md)
+- Roadmap: [`ROADMAP.md`](ROADMAP.md)
+- Contribution guide: [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- Changelog: [`CHANGELOG.md`](CHANGELOG.md)
 
-## Release and versioning
+## Related research references
 
-Current release: **v0-systemic-2026-03-10**
+Context docs included in this repo:
+- [`docs/agency-agents-reference.md`](docs/agency-agents-reference.md)
+- [`docs/system-design-fundamentals-reference.md`](docs/system-design-fundamentals-reference.md)
 
-Versioning guidance:
+These are references, not runtime dependencies.
 
-- Use date-stamped tags for major checkpoints in prototype phase.
-- Document notable behavior changes in this section.
-- Promote to semver (`v1.0.0+`) once interfaces stabilize.
+## Security and privacy
 
-Rollback example:
+- never commit `.env`, secrets, tokens, or private exports
+- keep examples generic and portable
+- treat project artifacts as sensitive until reviewed for publication
 
-```bash
-git checkout v0-systemic-2026-03-10
-```
+## Release notes (baseline)
+
+### Candidate: `v0.1.0`
+
+- establishes canonical project artifact contract
+- ships minimal orchestration core (`src/orch.py`)
+- includes helper scripts for project lifecycle
+- adds roadmap + mainline migration docs + community templates
+
+Tagging instructions live in [`MAINLINE_PLAN.md`](MAINLINE_PLAN.md).
+
+## License
+
+MIT (add `LICENSE` if missing in your target repo root).
